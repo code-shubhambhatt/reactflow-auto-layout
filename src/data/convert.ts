@@ -1,4 +1,8 @@
-import { lastOf } from '@del-wang/utils';
+import {
+  getFixedHandleIdForEdge,
+  getFixedHandleIds,
+  getHandleIndex,
+} from '@/layout/ports';
 
 import type { Reactflow, Workflow } from './types';
 
@@ -6,15 +10,51 @@ export const workflow2reactflow = (workflow: Workflow): Reactflow => {
   const { nodes = [], edges = [] } = workflow ?? {};
   const edgesCount: Record<string, number> = {};
   const edgesIndex: Record<string, { source: number; target: number }> = {};
-  const nodeHandles: Record<
-    string,
-    {
-      sourceHandles: Record<string, number>;
-      targetHandles: Record<string, number>;
-    }
-  > = {};
+  const sourceEdgesByNode: Record<string, number> = {};
+  const targetEdgesByNode: Record<string, number> = {};
 
-  for (const edge of edges) {
+  const nodeHandles = nodes.reduce(
+    (handles, node) => {
+      handles[node.id] = {
+        sourceHandles: getFixedHandleIds(node.id, 'source'),
+        targetHandles: getFixedHandleIds(node.id, 'target'),
+      };
+      return handles;
+    },
+    {} as Record<
+      string,
+      {
+        sourceHandles: string[];
+        targetHandles: string[];
+      }
+    >,
+  );
+
+  const normalizedEdges = edges.map((edge) => {
+    const sourceIndex = sourceEdgesByNode[edge.source] ?? 0;
+    const targetIndex = targetEdgesByNode[edge.target] ?? 0;
+    const sourceHandle = getFixedHandleIdForEdge(
+      edge.source,
+      'source',
+      sourceIndex,
+    );
+    const targetHandle = getFixedHandleIdForEdge(
+      edge.target,
+      'target',
+      targetIndex,
+    );
+
+    sourceEdgesByNode[edge.source] = sourceIndex + 1;
+    targetEdgesByNode[edge.target] = targetIndex + 1;
+
+    return {
+      ...edge,
+      sourceHandle,
+      targetHandle,
+    };
+  });
+
+  for (const edge of normalizedEdges) {
     const { source, target, sourceHandle, targetHandle } = edge;
     if (!edgesCount[sourceHandle]) {
       edgesCount[sourceHandle] = 1;
@@ -40,22 +80,6 @@ export const workflow2reactflow = (workflow: Workflow): Reactflow => {
       source: edgesCount[sourceHandle] - 1,
       target: edgesCount[targetHandle] - 1,
     };
-    if (!nodeHandles[source]) {
-      nodeHandles[source] = { sourceHandles: {}, targetHandles: {} };
-    }
-    if (!nodeHandles[target]) {
-      nodeHandles[target] = { sourceHandles: {}, targetHandles: {} };
-    }
-    if (!nodeHandles[source].sourceHandles[sourceHandle]) {
-      nodeHandles[source].sourceHandles[sourceHandle] = 1;
-    } else {
-      nodeHandles[source].sourceHandles[sourceHandle] += 1;
-    }
-    if (!nodeHandles[target].targetHandles[targetHandle]) {
-      nodeHandles[target].targetHandles[targetHandle] = 1;
-    } else {
-      nodeHandles[target].targetHandles[targetHandle] += 1;
-    }
   }
 
   return {
@@ -63,25 +87,25 @@ export const workflow2reactflow = (workflow: Workflow): Reactflow => {
       ...node,
       data: {
         ...node,
-        sourceHandles: Object.keys(nodeHandles[node.id].sourceHandles) ?? [],
-        targetHandles: Object.keys(nodeHandles[node.id].targetHandles) ?? [],
+        sourceHandles: nodeHandles[node.id]?.sourceHandles ?? [],
+        targetHandles: nodeHandles[node.id]?.targetHandles ?? [],
       },
       position: { x: 0, y: 0 },
     })),
-    edges: edges.map((edge) => ({
+    edges: normalizedEdges.map((edge) => ({
       ...edge,
       data: {
         sourcePort: {
           edges: edgesCount[`source-${edge.source}`],
-          portIndex: parseInt(lastOf(edge.sourceHandle.split('#'))!, 10),
-          portCount: Object.keys(nodeHandles[edge.source].sourceHandles).length,
+          portIndex: getHandleIndex('source', edge.sourceHandle),
+          portCount: nodeHandles[edge.source].sourceHandles.length,
           edgeIndex: edgesIndex[edge.id].source,
           edgeCount: edgesCount[edge.sourceHandle],
         },
         targetPort: {
           edges: edgesCount[`target-${edge.target}`],
-          portIndex: parseInt(lastOf(edge.targetHandle.split('#'))!, 10),
-          portCount: Object.keys(nodeHandles[edge.target].targetHandles).length,
+          portIndex: getHandleIndex('target', edge.targetHandle),
+          portCount: nodeHandles[edge.target].targetHandles.length,
           edgeIndex: edgesIndex[edge.id].target,
           edgeCount: edgesCount[edge.targetHandle],
         },

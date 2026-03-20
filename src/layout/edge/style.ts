@@ -1,17 +1,12 @@
-import { deepClone, deepEqual, lastOf } from '@del-wang/utils';
+import { deepClone, deepEqual } from '@del-wang/utils';
 import { getBezierPath, type Position } from '@xyflow/react';
 
 import { flowStore } from '@/states/reactflow';
 
-import {
-  kBaseMarkerColor,
-  kBaseMarkerColors,
-  kNoMarkerColor,
-  kYesMarkerColor,
-} from '../../components/Edges/Marker';
-import type { EdgeLayout, ReactflowEdgeWithData } from '../../data/types';
+import { kBaseMarkerColor } from '../../components/Edges/Marker';
+import type { EdgeLayout } from '../../data/types';
 import { getBasePath } from '.';
-import { getPathWithRoundCorners } from './edge';
+import { getLabelPosition, getPathWithRoundCorners } from './edge';
 
 interface EdgeStyle {
   color: string;
@@ -30,29 +25,7 @@ export const getEdgeStyles = (props: {
   id: string;
   isBackward: boolean;
 }): EdgeStyle => {
-  const { id, isBackward } = props;
-  const idx = parseInt(lastOf(id.split('#')) ?? '0', 10);
-  if (isBackward) {
-    // Use dashed lines to distinguish the edges when the connection line goes backward or connects to a hub Node
-    return { color: kNoMarkerColor, edgeType: 'dashed', pathType: 'base' };
-  }
-  const edge = flowStore.value.getEdge(id)! as ReactflowEdgeWithData;
-  if (edge.data!.targetPort.edges > 2) {
-    // Use dashed bezier path when the connection line connects to a hub Node
-    return {
-      color: kYesMarkerColor,
-      edgeType: 'dashed',
-      pathType: 'bezier',
-    };
-  }
-  if (edge.data!.sourcePort.edges > 2) {
-    // Use multiple colors to distinguish the edges when there are more than 3 edges connecting to both ends of the Node
-    return {
-      color: kBaseMarkerColors[idx % kBaseMarkerColors.length],
-      edgeType: 'solid',
-      pathType: 'base',
-    };
-  }
+  const { id: _id, isBackward: _isBackward } = props;
   return { color: kBaseMarkerColor, edgeType: 'solid', pathType: 'base' };
 };
 
@@ -87,7 +60,43 @@ export function layoutEdge({
   sourcePosition,
   targetPosition,
 }: ILayoutEdge): EdgeLayout {
-  const relayoutDeps = [sourceX, sourceY, targetX, targetY];
+  const sourceNode = flowStore.value.getInternalNode(source);
+  const targetNode = flowStore.value.getInternalNode(target);
+  const sourceRect = sourceNode
+    ? {
+        x: sourceNode.internals.positionAbsolute?.x ?? sourceNode.position.x,
+        y: sourceNode.internals.positionAbsolute?.y ?? sourceNode.position.y,
+        width: sourceNode.width ?? 0,
+        height: sourceNode.height ?? 0,
+      }
+    : undefined;
+  const targetRect = targetNode
+    ? {
+        x: targetNode.internals.positionAbsolute?.x ?? targetNode.position.x,
+        y: targetNode.internals.positionAbsolute?.y ?? targetNode.position.y,
+        width: targetNode.width ?? 0,
+        height: targetNode.height ?? 0,
+      }
+    : undefined;
+  const relayoutDeps = [
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+    sourceRect?.x,
+    sourceRect?.y,
+    sourceRect?.width,
+    sourceRect?.height,
+    targetRect?.x,
+    targetRect?.y,
+    targetRect?.width,
+    targetRect?.height,
+    pathType,
+    borderRadius,
+    offset,
+  ];
   const needRelayout = !deepEqual(relayoutDeps, layout?.deps?.relayoutDeps);
   const reBuildPathDeps = layout?.points;
   const needReBuildPath = !deepEqual(
@@ -181,6 +190,7 @@ function _layoutEdge({
 
   if ((layout?.points?.length ?? 0) > 1) {
     layout!.path = getPathWithRoundCorners(layout!.points, borderRadius);
+    layout!.labelPosition = getLabelPosition(layout!.points);
     return layout!;
   }
 

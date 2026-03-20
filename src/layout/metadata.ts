@@ -13,7 +13,7 @@ export const getRootNode = (nodes: Reactflow['nodes']) => {
 
 export const getNodeSize = (
   node: ReactflowNodeWithData,
-  defaultSize = { width: 150, height: 36 },
+  defaultSize = { width: 120, height: 120 },
 ) => {
   const nodeWith = node.measured?.width;
   const nodeHeight = node.measured?.height;
@@ -70,7 +70,7 @@ export const getNodeLayouted = (props: {
     }),
     data: {
       ...node.data,
-      label: node.id,
+      label: node.data.label ?? node.id,
     },
     style: {
       ...node.style,

@@ -1,53 +1,94 @@
 import './styles.css';
 
-import { Handle, type NodeProps, Position } from '@xyflow/react';
-import { type ComponentType, memo } from 'react';
+import {
+  Handle,
+  type NodeProps,
+  Position,
+  useUpdateNodeInternals,
+} from '@xyflow/react';
+import { type ComponentType, type CSSProperties, memo, useEffect } from 'react';
 
 import { kReactflowLayoutConfig } from '@/components/ControlPanel';
 import type { ReactflowBaseNode } from '@/data/types';
+import {
+  groupHandlesBySide,
+  type HandleKind,
+  type HandleSide,
+  kHandlePositionBySide,
+} from '@/layout/ports';
+
+const kSides: HandleSide[] = ['top', 'right', 'bottom', 'left'];
+
+const getHandleFlexDirection = (
+  side: HandleSide,
+  reverseOrder = false,
+): CSSProperties['flexDirection'] => {
+  const isHorizontalSide = [Position.Top, Position.Bottom].includes(
+    kHandlePositionBySide[side],
+  );
+  if (isHorizontalSide) {
+    return reverseOrder ? 'row-reverse' : 'row';
+  }
+  return reverseOrder ? 'column-reverse' : 'column';
+};
+
+const renderHandles = (
+  kind: HandleKind,
+  handlesBySide: Record<HandleSide, string[]>,
+  reverseOrder = false,
+) => {
+  return kSides.map((side) => {
+    const ids = handlesBySide[side];
+    if (!ids.length) {
+      return null;
+    }
+    return (
+      <div
+        className={`handles-side handles-side-${side} ${kind}s`}
+        key={`${kind}-${side}`}
+        style={{ flexDirection: getHandleFlexDirection(side, reverseOrder) }}
+      >
+        {ids.map((id) => (
+          <Handle
+            className={`handle handle-${side}`}
+            id={id}
+            key={id}
+            position={kHandlePositionBySide[side]}
+            type={kind}
+          />
+        ))}
+      </div>
+    );
+  });
+};
 
 export const BaseNode: ComponentType<NodeProps<ReactflowBaseNode>> = memo(
-  ({ data }) => {
-    const { direction, reverseSourceHandles } = kReactflowLayoutConfig.state;
-    const isHorizontal = direction === 'horizontal';
-    const targetHandlesFlexDirection: any = isHorizontal ? 'column' : 'row';
-    const sourceHandlesFlexDirection: any =
-      targetHandlesFlexDirection + (reverseSourceHandles ? '-reverse' : '');
+  ({ id, data }) => {
+    const { reverseSourceHandles } = kReactflowLayoutConfig.state;
+    const updateNodeInternals = useUpdateNodeInternals();
+    const targetHandlesBySide = groupHandlesBySide(
+      data.targetHandles,
+      'target',
+    );
+    const sourceHandlesBySide = groupHandlesBySide(
+      data.sourceHandles,
+      'source',
+    );
+
+    useEffect(() => {
+      const frameId = requestAnimationFrame(() => {
+        updateNodeInternals(id);
+      });
+      return () => {
+        cancelAnimationFrame(frameId);
+      };
+    }, [id, data.sourceHandles, data.targetHandles, updateNodeInternals]);
+
     return (
       <>
-        <div
-          className={`handles handles-${direction} targets`}
-          style={{
-            flexDirection: targetHandlesFlexDirection,
-          }}
-        >
-          {data.targetHandles.map((id) => (
-            <Handle
-              className={`handle handle-${direction}`}
-              id={id}
-              key={id}
-              position={isHorizontal ? Position.Left : Position.Top}
-              type="target"
-            />
-          ))}
-        </div>
-        <div className="label">{data.id}</div>
-        <div
-          className={`handles handles-${direction} sources`}
-          style={{
-            flexDirection: sourceHandlesFlexDirection,
-          }}
-        >
-          {data.sourceHandles.map((id) => (
-            <Handle
-              className={`handle handle-${direction}`}
-              id={id}
-              key={id}
-              position={isHorizontal ? Position.Right : Position.Bottom}
-              type="source"
-            />
-          ))}
-        </div>
+        {renderHandles('target', targetHandlesBySide)}
+        <div className="label">{String(data.label ?? data.id)}</div>
+        {renderHandles('source', sourceHandlesBySide, reverseSourceHandles)}
       </>
     );
   },

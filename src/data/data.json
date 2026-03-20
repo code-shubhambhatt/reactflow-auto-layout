@@ -1,83 +1,227 @@
 {
   "nodes": [
     {
-      "id": "A",
-      "type": "base"
+      "id": "node-device-1",
+      "type": "base",
+      "label": "Device 1",
+      "category": "Internet of Things",
+      "serviceprovidername": "aws",
+      "serviceid": "91",
+      "groups": ["group-data-sources"]
     },
     {
-      "id": "B",
-      "type": "base"
+      "id": "node-device-2",
+      "type": "base",
+      "label": "Device 2",
+      "category": "Internet of Things",
+      "serviceprovidername": "aws",
+      "serviceid": "91",
+      "groups": ["group-data-sources"]
     },
     {
-      "id": "C",
-      "type": "base"
+      "id": "node-device-n",
+      "type": "base",
+      "label": "Device N",
+      "category": "Internet of Things",
+      "serviceprovidername": "aws",
+      "serviceid": "91",
+      "groups": ["group-data-sources"]
     },
     {
-      "id": "D",
-      "type": "base"
+      "id": "node-kinesis-raw",
+      "type": "base",
+      "label": "Kinesis Raw",
+      "category": "Analytics",
+      "serviceprovidername": "aws",
+      "serviceid": "6",
+      "groups": ["group-ingestion"]
     },
     {
-      "id": "E",
-      "type": "base"
+      "id": "node-lambda-enrichment",
+      "type": "base",
+      "label": "Enrichment Lambda",
+      "category": "Compute",
+      "serviceprovidername": "aws",
+      "serviceid": "48",
+      "groups": ["group-processing"]
     },
     {
-      "id": "F",
-      "type": "base"
+      "id": "node-dynamodb-reference",
+      "type": "base",
+      "label": "DynamoDB Reference Data",
+      "category": "Database",
+      "serviceprovidername": "aws",
+      "serviceid": "61",
+      "groups": ["group-processing"]
     },
     {
-      "id": "G",
-      "type": "base"
+      "id": "node-sqs-dlq",
+      "type": "base",
+      "label": "SQS DLQ",
+      "category": "Application Integration",
+      "serviceprovidername": "aws",
+      "serviceid": "21",
+      "groups": ["group-processing"]
+    },
+    {
+      "id": "node-opensearch",
+      "type": "base",
+      "label": "OpenSearch Service",
+      "category": "Analytics",
+      "serviceprovidername": "aws",
+      "serviceid": "8",
+      "groups": ["group-hot-path"]
+    },
+    {
+      "id": "node-opensearch-dashboards",
+      "type": "base",
+      "label": "OpenSearch Dashboards",
+      "category": "Analytics",
+      "serviceprovidername": "aws",
+      "serviceid": "456",
+      "groups": ["group-hot-path"]
+    },
+    {
+      "id": "node-firehose",
+      "type": "base",
+      "label": "Kinesis Firehose",
+      "category": "Analytics",
+      "serviceprovidername": "aws",
+      "serviceid": "233",
+      "groups": ["group-cold-warm-path"]
+    },
+    {
+      "id": "node-s3-datalake",
+      "type": "base",
+      "label": "S3 Data Lake",
+      "category": "Storage",
+      "serviceprovidername": "aws",
+      "serviceid": "86",
+      "groups": ["group-cold-warm-path"]
+    },
+    {
+      "id": "node-redshift-serverless",
+      "type": "base",
+      "label": "Redshift Serverless",
+      "category": "Database",
+      "serviceprovidername": "aws",
+      "serviceid": "260",
+      "groups": ["group-cold-warm-path"]
+    },
+    {
+      "id": "node-bi-tools",
+      "type": "base",
+      "label": "BI Tools (Tableau/PowerBI)",
+      "category": "Miscellaneous",
+      "serviceprovidername": "generic",
+      "serviceid": "50004",
+      "groups": ["group-bi-reporting"]
     }
   ],
   "edges": [
     {
-      "id": "A#B#0",
-      "source": "A",
-      "target": "B",
-      "sourceHandle": "A#source#0",
-      "targetHandle": "B#target#0"
+      "id": "edge-device1-kinesis",
+      "source": "node-device-1",
+      "target": "node-kinesis-raw",
+      "sourceHandle": "node-device-1#source#0",
+      "targetHandle": "node-kinesis-raw#target#0",
+      "label": "Ingest"
     },
     {
-      "id": "A#D#1",
-      "source": "A",
-      "target": "D",
-      "sourceHandle": "A#source#1",
-      "targetHandle": "D#target#0"
+      "id": "edge-device2-kinesis",
+      "source": "node-device-2",
+      "target": "node-kinesis-raw",
+      "sourceHandle": "node-device-2#source#0",
+      "targetHandle": "node-kinesis-raw#target#1",
+      "label": "Ingest"
     },
     {
-      "id": "A#C#2",
-      "source": "A",
-      "target": "C",
-      "sourceHandle": "A#source#2",
-      "targetHandle": "C#target#0"
+      "id": "edge-devicen-kinesis",
+      "source": "node-device-n",
+      "target": "node-kinesis-raw",
+      "sourceHandle": "node-device-n#source#0",
+      "targetHandle": "node-kinesis-raw#target#2",
+      "label": "Ingest"
     },
     {
-      "id": "B#E#0",
-      "source": "B",
-      "target": "E",
-      "sourceHandle": "B#source#0",
-      "targetHandle": "E#target#0"
+      "id": "edge-kinesis-lambda",
+      "source": "node-kinesis-raw",
+      "target": "node-lambda-enrichment",
+      "sourceHandle": "node-kinesis-raw#source#0",
+      "targetHandle": "node-lambda-enrichment#target#0",
+      "label": "Process"
     },
     {
-      "id": "D#E#0",
-      "source": "D",
-      "target": "E",
-      "sourceHandle": "D#source#0",
-      "targetHandle": "E#target#0"
+      "id": "edge-lambda-dynamodb",
+      "source": "node-lambda-enrichment",
+      "target": "node-dynamodb-reference",
+      "sourceHandle": "node-lambda-enrichment#source#0",
+      "targetHandle": "node-dynamodb-reference#target#0",
+      "label": "Query"
     },
     {
-      "id": "E#F#0",
-      "source": "E",
-      "target": "F",
-      "sourceHandle": "E#source#0",
-      "targetHandle": "F#target#0"
+      "id": "edge-dynamodb-lambda",
+      "source": "node-dynamodb-reference",
+      "target": "node-lambda-enrichment",
+      "sourceHandle": "node-dynamodb-reference#source#0",
+      "targetHandle": "node-lambda-enrichment#target#1",
+      "label": "Return"
     },
     {
-      "id": "E#G#1",
-      "source": "E",
-      "target": "G",
-      "sourceHandle": "E#source#0",
-      "targetHandle": "G#target#0"
+      "id": "edge-lambda-opensearch",
+      "source": "node-lambda-enrichment",
+      "target": "node-opensearch",
+      "sourceHandle": "node-lambda-enrichment#source#1",
+      "targetHandle": "node-opensearch#target#0",
+      "label": "Index"
+    },
+    {
+      "id": "edge-lambda-dlq",
+      "source": "node-lambda-enrichment",
+      "target": "node-sqs-dlq",
+      "sourceHandle": "node-lambda-enrichment#source#2",
+      "targetHandle": "node-sqs-dlq#target#0",
+      "label": "Failed Records"
+    },
+    {
+      "id": "edge-opensearch-dashboards",
+      "source": "node-opensearch",
+      "target": "node-opensearch-dashboards",
+      "sourceHandle": "node-opensearch#source#0",
+      "targetHandle": "node-opensearch-dashboards#target#0",
+      "label": "Query"
+    },
+    {
+      "id": "edge-lambda-firehose",
+      "source": "node-lambda-enrichment",
+      "target": "node-firehose",
+      "sourceHandle": "node-lambda-enrichment#source#3",
+      "targetHandle": "node-firehose#target#0",
+      "label": "Batch"
+    },
+    {
+      "id": "edge-firehose-s3",
+      "source": "node-firehose",
+      "target": "node-s3-datalake",
+      "sourceHandle": "node-firehose#source#0",
+      "targetHandle": "node-s3-datalake#target#0",
+      "label": "Deliver"
+    },
+    {
+      "id": "edge-s3-redshift",
+      "source": "node-s3-datalake",
+      "target": "node-redshift-serverless",
+      "sourceHandle": "node-s3-datalake#source#0",
+      "targetHandle": "node-redshift-serverless#target#0",
+      "label": "Query via Spectrum"
+    },
+    {
+      "id": "edge-redshift-bi",
+      "source": "node-redshift-serverless",
+      "target": "node-bi-tools",
+      "sourceHandle": "node-redshift-serverless#source#0",
+      "targetHandle": "node-bi-tools#target#0",
+      "label": "Report"
     }
   ]
 }

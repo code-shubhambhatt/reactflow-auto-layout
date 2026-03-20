@@ -49,8 +49,8 @@ export const kLayoutAlgorithms: Record<string, LayoutAlgorithm> = {
 };
 
 export const kDefaultLayoutConfig: ReactflowLayoutConfig = {
-  algorithm: 'elk-mr-tree',
-  direction: 'vertical',
+  algorithm: 'elk-layered',
+  direction: 'horizontal',
   visibility: 'visible',
   spacing: { x: 120, y: 120 },
   reverseSourceHandles: false,

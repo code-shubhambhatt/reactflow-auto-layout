@@ -1,7 +1,13 @@
 .react-flow__node-base {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
   background: #f8f8f8;
   border: 1px solid rgba(0, 0, 0, 50%);
-  border-radius: 4px;
+  border-radius: 0;
 }
 
 .react-flow__handle {
@@ -17,17 +23,10 @@
   background: #224466;
 }
 
-.handle-horizontal {
-  top: auto;
-}
-
-.handle-vertical {
-  left: auto;
-}
-
 .label {
-  max-width: 240px;
-  padding: 16px 32px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px;
   font-size: 12px;
   text-align: center;
   word-break: break-all;
@@ -37,38 +36,39 @@
   flex-grow: 1;
 }
 
-.handles {
+.handles-side {
   position: absolute;
   display: flex;
-  justify-content: space-around;
+  align-items: center;
+  justify-content: space-evenly;
 }
 
-.handles-horizontal {
-  width: 10px;
-  height: 100%;
-}
-
-.handles-vertical {
-  width: 100%;
+.handles-side-top,
+.handles-side-bottom {
+  left: 12px;
+  width: calc(100% - 24px);
   height: 10px;
 }
 
-.handles-horizontal.targets {
-  top: 0px;
-  left: -4px;
+.handles-side-left,
+.handles-side-right {
+  top: 12px;
+  width: 10px;
+  height: calc(100% - 24px);
 }
 
-.handles-horizontal.sources {
-  top: 0px;
-  right: -2px;
-}
-
-.handles-vertical.targets {
+.handles-side-top {
   top: -4px;
-  left: 0px;
 }
 
-.handles-vertical.sources {
-  bottom: -2px;
-  left: 0px;
+.handles-side-right {
+  right: -4px;
+}
+
+.handles-side-bottom {
+  bottom: -4px;
+}
+
+.handles-side-left {
+  left: -4px;
 }

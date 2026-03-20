@@ -1,7 +1,8 @@
-import { getIncomers } from '@xyflow/react';
+import { getIncomers, Position } from '@xyflow/react';
 import ELK from 'elkjs/lib/elk.bundled.js';
 
 import type { ReactflowNodeWithData } from '@/data/types';
+import { getHandlePosition } from '@/layout/ports';
 
 import { getEdgeLayouted, getNodeLayouted, getNodeSize } from '../../metadata';
 import type { LayoutAlgorithm, LayoutAlgorithmProps } from '..';
@@ -12,6 +13,19 @@ const algorithms = {
 };
 
 const elk = new ELK({ algorithms: Object.values(algorithms) });
+
+const getElkPortSide = (position: Position) => {
+  switch (position) {
+    case Position.Top:
+      return 'NORTH';
+    case Position.Right:
+      return 'EAST';
+    case Position.Bottom:
+      return 'SOUTH';
+    case Position.Left:
+      return 'WEST';
+  }
+};
 
 export type ELKLayoutAlgorithms = 'elk-layered' | 'elk-mr-tree';
 
@@ -26,7 +40,6 @@ export const layoutELK = async (
     spacing,
     algorithm = 'elk-mr-tree',
   } = props;
-  const isHorizontal = direction === 'horizontal';
 
   const subWorkflowRootNodes: ReactflowNodeWithData[] = [];
   const layoutNodes = nodes.map((node) => {
@@ -36,16 +49,16 @@ export const layoutELK = async (
       subWorkflowRootNodes.push(node);
     }
     const { widthWithDefault, heightWithDefault } = getNodeSize(node);
-    const sourcePorts = node.data.sourceHandles.map((id) => ({
+    const sourcePorts = node.data.sourceHandles.map((id, index) => ({
       id,
       properties: {
-        side: isHorizontal ? 'EAST' : 'SOUTH',
+        side: getElkPortSide(getHandlePosition('source', index, id)),
       },
     }));
-    const targetPorts = node.data.targetHandles.map((id) => ({
+    const targetPorts = node.data.targetHandles.map((id, index) => ({
       id,
       properties: {
-        side: isHorizontal ? 'WEST' : 'NORTH',
+        side: getElkPortSide(getHandlePosition('target', index, id)),
       },
     }));
     return {
@@ -86,14 +99,16 @@ export const layoutELK = async (
       layoutOptions: {
         // - https://www.eclipse.org/elk/reference/algorithms.html
         'elk.algorithm': algorithms[algorithm],
-        'elk.direction': isHorizontal ? 'RIGHT' : 'DOWN',
+        'elk.direction': direction === 'horizontal' ? 'RIGHT' : 'DOWN',
         // - https://www.eclipse.org/elk/reference/options.html
-        'elk.spacing.nodeNode': isHorizontal
-          ? spacing.y.toString()
-          : spacing.x.toString(),
-        'elk.layered.spacing.nodeNodeBetweenLayers': isHorizontal
-          ? spacing.x.toString()
-          : spacing.y.toString(),
+        'elk.spacing.nodeNode':
+          direction === 'horizontal'
+            ? spacing.y.toString()
+            : spacing.x.toString(),
+        'elk.layered.spacing.nodeNodeBetweenLayers':
+          direction === 'horizontal'
+            ? spacing.x.toString()
+            : spacing.y.toString(),
       },
     })
     .catch((e) => {
