@@ -1,62 +1,150 @@
-# ReactFlow Auto Layout Demo
+# ReactFlow Auto Layout
 
-A demonstration of auto-layout capabilities and Figma-like edge editing features built with [ReactFlow](https://reactflow.dev).
+This project is a React Flow based diagram editor with:
 
-👉 **Live Demo:** [https://reactflow-auto-layout.vercel.app](https://reactflow-auto-layout.vercel.app/)
+- automatic node layout
+- orthogonal edge routing with rounded corners
+- edge dragging/editing
+- fixed side ports
+- background group containers derived from workflow metadata
 
-## ✨ Features
+## Run Locally
 
-### 1. Node Auto Layout
+### Prerequisites
 
-- Support for multiple auto-layout algorithms including [Dagre](https://github.com/dagrejs/dagre), [ELK](https://github.com/kieler/elkjs), [D3-hierarchy](https://github.com/d3/d3-hierarchy), [D3-dag](https://github.com/erikbrinkman/d3-dag), and more
-- Automatic layout with dynamic node sizing
-- Multi-subflow layout support
-- Dynamic adjustment of layout direction, node spacing, port sorting, and other layout parameters
+- Node.js 20+ recommended
+- `pnpm` recommended because the repo declares `pnpm@10.26.2`
 
-https://github.com/idootop/reactflow-auto-layout/assets/35302658/952f5021-1cd0-49bf-8dd8-b12521e2a7ce
+### Install
 
-### 2. Smart Edge Routing
+```bash
+git clone https://github.com/code-shubhambhatt/reactflow-auto-layout.git
+cd reactflow-auto-layout
+pnpm install
+```
 
-- Implements the [A\* search algorithm](https://en.wikipedia.org/wiki/A*_search_algorithm) combined with [Manhattan Distance](https://simple.wikipedia.org/wiki/Manhattan_distance) to compute optimal edge paths
-- Minimizes overlap and intersections between edges and nodes
+### Start the app
 
-https://github.com/idootop/reactflow-auto-layout/assets/35302658/ea9a3657-b1d2-47c8-9a13-3727dfc31d48
+```bash
+pnpm dev
+```
 
-### 3. Interactive Edge Editing
+Open the local Vite URL shown in the terminal, usually:
 
-- Edges are rendered as right-angled polylines with rounded corners
-- Drag control handles to adjust line segments between control points
-- Automatic merging of nearby control points and segments, with intelligent splitting of new control points during manipulation
+```text
+http://localhost:5173
+```
 
-https://github.com/idootop/reactflow-auto-layout/assets/35302658/01f1c5c5-f224-4d12-9a31-bca45a0d5a56
+### Other useful commands
 
-## 🌲 Project Structure
+```bash
+pnpm build
+pnpm preview
+pnpm lint
+```
 
-The project is organized into functional modules that can be easily adapted for your own use. Here's an overview of the key components:
+## How To Use
 
-### Type Definitions
+On startup, the app loads the sample workflow from [src/data/data.json](./src/data/data.json).
 
-- [src/data/types.ts](./src/data/types.ts): Core type definitions for nodes and edges. Start here to understand the data structures used throughout the codebase.
+If you want to test your own workflow, use either of these approaches:
 
-### Node Auto Layout
+1. Replace the contents of [src/data/data.json](./src/data/data.json) and restart or refresh.
+2. Paste your workflow JSON into the `Workflow` field in the left control panel and click `Layout`.
 
-- [src/layout/node/algorithms](./src/layout/node/algorithms): Implementations of various node layout algorithms
-- [src/layout/useAutoLayout.ts](./src/layout/useAutoLayout.ts): Auto-layout orchestration, including dynamic node sizing logic
+You can also change:
 
-### Edge Editing
+- `Algorithms`
+- `Direction`
+- `Spacing`
+- source handle order
 
-- [src/layout/edge/index.ts](./src/layout/edge/index.ts): Control point generation algorithms and rounded corner path rendering
-- [src/layout/edge/algorithms/index.ts](./src/layout/edge/algorithms/index.ts): Core edge auto-routing algorithm. See the [LogicFlow article on edge rendering](https://juejin.cn/post/6942727734518874142) for additional context
-- [src/components/Edges/EdgeController/index.tsx](./src/components/Edges/EdgeController/index.tsx): Edge segment drag event handling
-- [src/components/Edges/EdgeController/smart-edge.ts](./src/components/Edges/EdgeController/smart-edge.ts): Figma-like edge auto-merging and splitting logic
+The default layout settings live in [src/layout/node/index.ts](./src/layout/node/index.ts).
 
-While the codebase may appear complex at first glance, the underlying logic is relatively straightforward. Feel free to open an [issue](https://github.com/idootop/reactflow-auto-layout/issues) if you have any questions.
+## Workflow JSON Format
 
-## ❤️ Acknowledgements
+This fork expects a compatible workflow JSON like this:
 
-This project builds upon the work of many others:
+```json
+{
+  "nodes": [
+    {
+      "id": "node-a",
+      "type": "base",
+      "label": "Service A",
+      "category": "Compute",
+      "serviceprovidername": "aws",
+      "serviceid": "48",
+      "groups": ["group-core"]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-a-b",
+      "source": "node-a",
+      "target": "node-b",
+      "sourceHandle": "node-a#source#0",
+      "targetHandle": "node-b#target#0",
+      "label": "Calls"
+    }
+  ],
+  "groups": [
+    {
+      "id": "group-core",
+      "label": "Core Services",
+      "typeId": 254
+    }
+  ]
+}
+```
 
-1. [ReactFlow](https://reactflow.dev/) — The powerful diagram engine that powers this project
-2. [flanksource-ui](https://github.com/flanksource/flanksource-ui/blob/75b35591d3bbc7d446fa326d0ca7536790f38d88/src/ui/Graphs/Layouts/algorithms/d3-hierarchy.ts) — Reference implementation for the [D3-hierarchy](https://github.com/d3/d3-hierarchy) auto-layout approach
-3. [LogicFlow 边的绘制与交互](https://juejin.cn/post/6942727734518874142) — Inspiration for the edge auto-routing implementation
-4. [a3ng7n](https://github.com/a3ng7n) — For the excellent [English comment translations](https://github.com/idootop/reactflow-auto-layout/pull/1)
+### Notes
+
+- Node `label` is displayed in the UI.
+- `groups` on a node define which background containers the node belongs to.
+- Top-level `groups` are used to render the visible group labels.
+- Directional handle metadata from older source files is not required here. The app remaps edges onto its fixed side-port model during conversion.
+
+## Current Port Model
+
+The stable port configuration in this repo is:
+
+- target ports on `left` and `top`
+- source ports on `right` and `bottom`
+
+The side assignment logic is in [src/layout/ports.ts](./src/layout/ports.ts).
+
+## Group Rendering
+
+Group functionality is implemented as generated background nodes:
+
+1. workflow `groups` are preserved during conversion
+2. normal service nodes are laid out first
+3. group bounds are computed from member-node positions
+4. synthetic `group` nodes are rendered behind service nodes
+
+Relevant files:
+
+- [src/data/types.ts](./src/data/types.ts)
+- [src/data/convert.ts](./src/data/convert.ts)
+- [src/layout/groups.ts](./src/layout/groups.ts)
+- [src/components/Nodes/GroupNode/index.tsx](./src/components/Nodes/GroupNode/index.tsx)
+
+## Project Structure
+
+- [src/App.tsx](./src/App.tsx): app entry and initial workflow load
+- [src/components/ControlPanel.tsx](./src/components/ControlPanel.tsx): layout controls and workflow JSON input
+- [src/data/convert.ts](./src/data/convert.ts): converts workflow JSON into the internal React Flow shape
+- [src/layout/node](./src/layout/node): node layout algorithms and defaults
+- [src/layout/edge](./src/layout/edge): edge routing and path generation
+- [src/layout/groups.ts](./src/layout/groups.ts): group container generation
+
+## Example Files
+
+Compatible examples created during testing live outside the package root in the parent workspace, for example:
+
+- `react-diagram.json`
+- `production_ready_aws_architecture_compatible.json`
+- `gcp_static_website_production_compatible.json`
+
+If you want those versioned in the repo, copy them under this project before committing.
