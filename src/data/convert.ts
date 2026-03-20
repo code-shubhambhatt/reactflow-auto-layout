@@ -7,7 +7,7 @@ import {
 import type { Reactflow, Workflow } from './types';
 
 export const workflow2reactflow = (workflow: Workflow): Reactflow => {
-  const { nodes = [], edges = [] } = workflow ?? {};
+  const { nodes = [], edges = [], groups = [] } = workflow ?? {};
   const edgesCount: Record<string, number> = {};
   const edgesIndex: Record<string, { source: number; target: number }> = {};
   const sourceEdgesByNode: Record<string, number> = {};
@@ -111,5 +111,6 @@ export const workflow2reactflow = (workflow: Workflow): Reactflow => {
         },
       },
     })),
+    groups,
   };
 };

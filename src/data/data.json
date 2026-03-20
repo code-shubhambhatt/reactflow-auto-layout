@@ -223,5 +223,37 @@
       "targetHandle": "node-bi-tools#target#0",
       "label": "Report"
     }
+  ],
+  "groups": [
+    {
+      "id": "group-data-sources",
+      "label": "Data Sources",
+      "typeId": 254
+    },
+    {
+      "id": "group-ingestion",
+      "label": "Ingestion & Streaming",
+      "typeId": 254
+    },
+    {
+      "id": "group-processing",
+      "label": "Processing & Enrichment",
+      "typeId": 254
+    },
+    {
+      "id": "group-hot-path",
+      "label": "Ultra-Hot Path (1-5s Latency)",
+      "typeId": 254
+    },
+    {
+      "id": "group-cold-warm-path",
+      "label": "Cold/Warm Path (Historical BI)",
+      "typeId": 254
+    },
+    {
+      "id": "group-bi-reporting",
+      "label": "BI & Reporting",
+      "typeId": 254
+    }
   ]
 }

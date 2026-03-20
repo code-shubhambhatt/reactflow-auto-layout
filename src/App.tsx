@@ -51,8 +51,8 @@ const EditWorkFlow = () => {
   };
 
   useEffect(() => {
-    const { nodes, edges } = workflow2reactflow(defaultWorkflow as any);
-    layout({ nodes, edges, ...kDefaultLayoutConfig });
+    const workflow = workflow2reactflow(defaultWorkflow as any);
+    layout({ ...workflow, ...kDefaultLayoutConfig });
   }, []);
 
   return (

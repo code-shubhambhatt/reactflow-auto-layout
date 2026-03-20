@@ -1,6 +1,7 @@
 import { removeEmpty } from '@del-wang/utils';
 
 import type { Reactflow } from '../../data/types';
+import { withGroupNodes } from '../groups';
 import {
   type D3DAGLayoutAlgorithms,
   kD3DAGAlgorithms,
@@ -81,5 +82,5 @@ export const layoutReactflow = async (
       algorithm: 'origin',
     });
   }
-  return result!;
+  return withGroupNodes(result!);
 };

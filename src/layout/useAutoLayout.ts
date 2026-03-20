@@ -44,7 +44,7 @@ export const useAutoLayout = () => {
     const secondLayout = await layoutWithFlush({
       visibility: 'visible',
       ...options,
-      nodes: firstLayout.nodes,
+      nodes: firstLayout.nodes.filter((node) => node.type !== 'group'),
       edges: firstLayout.edges,
     });
     setIsDirty(false);

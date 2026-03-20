@@ -5,6 +5,8 @@ import type { ControlPoint } from '../layout/edge/point';
 interface WorkflowNode extends Record<string, unknown> {
   id: string;
   type: 'base' | 'start';
+  label?: string;
+  groups?: string[];
 }
 
 interface WorkflowEdge {
@@ -15,9 +17,16 @@ interface WorkflowEdge {
   targetHandle: string;
 }
 
+export interface WorkflowGroup extends Record<string, unknown> {
+  id: string;
+  label: string;
+  typeId?: number;
+}
+
 export interface Workflow {
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
+  groups?: WorkflowGroup[];
 }
 
 export type ReactflowNodeData = WorkflowNode & {
@@ -33,6 +42,13 @@ export type ReactflowNodeData = WorkflowNode & {
    * Format of Port ID: `nodeID#target#idx`
    */
   targetHandles: string[];
+};
+
+export type ReactflowGroupNodeData = WorkflowGroup & {
+  childNodeIds: string[];
+  sourceHandles: string[];
+  targetHandles: string[];
+  isGroup: true;
 };
 
 export interface ReactflowEdgePort {
@@ -89,7 +105,11 @@ export interface ReactflowEdgeData extends Record<string, unknown> {
 
 export type ReactflowBaseNode = Node<ReactflowNodeData, 'base'>;
 export type ReactflowStartNode = Node<ReactflowNodeData, 'start'>;
-export type ReactflowNodeWithData = ReactflowBaseNode | ReactflowStartNode;
+export type ReactflowGroupNode = Node<ReactflowGroupNodeData, 'group'>;
+export type ReactflowNodeWithData =
+  | ReactflowBaseNode
+  | ReactflowStartNode
+  | ReactflowGroupNode;
 
 export type ReactflowBaseEdge = Edge<ReactflowEdgeData, 'base'>;
 export type ReactflowEdgeWithData = ReactflowBaseEdge;
@@ -97,4 +117,5 @@ export type ReactflowEdgeWithData = ReactflowBaseEdge;
 export interface Reactflow {
   nodes: ReactflowNodeWithData[];
   edges: ReactflowEdgeWithData[];
+  groups?: WorkflowGroup[];
 }
