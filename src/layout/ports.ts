@@ -3,19 +3,23 @@ import { Position } from '@xyflow/react';
 export type HandleKind = 'source' | 'target';
 export type HandleSide = 'top' | 'right' | 'bottom' | 'left';
 
-export const kSourceHandleSides: readonly HandleSide[] = ['right', 'bottom'];
-export const kTargetHandleSides: readonly HandleSide[] = ['left', 'top'];
+export const kPortSides: readonly HandleSide[] = [
+  'top',
+  'right',
+  'bottom',
+  'left',
+];
+
+const kPortSideOrders: Record<HandleKind, readonly HandleSide[]> = {
+  source: ['right', 'bottom', 'left', 'top'],
+  target: ['left', 'top', 'right', 'bottom'],
+};
 
 const kHandleSideByPosition: Record<Position, HandleSide> = {
   [Position.Top]: 'top',
   [Position.Right]: 'right',
   [Position.Bottom]: 'bottom',
   [Position.Left]: 'left',
-};
-
-const kSideOrders: Record<HandleKind, readonly Position[]> = {
-  source: [Position.Right, Position.Bottom],
-  target: [Position.Left, Position.Top],
 };
 
 export const kHandlePositionBySide: Record<HandleSide, Position> = {
@@ -37,17 +41,40 @@ export const getHandleSideFromId = (id: string): HandleSide | undefined => {
   });
 };
 
+export const getPortId = (nodeId: string, side: HandleSide) => {
+  return `${nodeId}#port#${side}`;
+};
+
+export const getPortIds = (nodeId: string) => {
+  return kPortSides.map((side) => getPortId(nodeId, side));
+};
+
+const getFallbackSide = (kind: HandleKind, index: number) => {
+  return kPortSideOrders[kind][index % kPortSideOrders[kind].length];
+};
+
+export const normalizePortId = (
+  nodeId: string,
+  kind: HandleKind,
+  id: string | null | undefined,
+  edgeIndex = 0,
+) => {
+  const side =
+    (id ? getHandleSideFromId(id) : undefined) ??
+    getFallbackSide(kind, edgeIndex);
+  return getPortId(nodeId, side);
+};
+
 export const getFixedHandleId = (
   nodeId: string,
   kind: HandleKind,
   side: HandleSide,
 ) => {
-  return `${nodeId}#${kind}#${side}`;
+  return getPortId(nodeId, side);
 };
 
-export const getFixedHandleIds = (nodeId: string, kind: HandleKind) => {
-  const sides = kind === 'source' ? kSourceHandleSides : kTargetHandleSides;
-  return sides.map((side) => getFixedHandleId(nodeId, kind, side));
+export const getFixedHandleIds = (nodeId: string, _kind: HandleKind) => {
+  return getPortIds(nodeId);
 };
 
 export const getFixedHandleIdForEdge = (
@@ -55,15 +82,13 @@ export const getFixedHandleIdForEdge = (
   kind: HandleKind,
   edgeIndex: number,
 ) => {
-  const sides = kind === 'source' ? kSourceHandleSides : kTargetHandleSides;
-  const side = sides[edgeIndex % sides.length];
-  return getFixedHandleId(nodeId, kind, side);
+  return normalizePortId(nodeId, kind, undefined, edgeIndex);
 };
 
 export const getHandleIndex = (kind: HandleKind, id: string) => {
   const side = getHandleSideFromId(id);
   if (side) {
-    const sides = kind === 'source' ? kSourceHandleSides : kTargetHandleSides;
+    const sides = kPortSideOrders[kind];
     const idx = sides.indexOf(side);
     if (idx >= 0) {
       return idx;
@@ -83,8 +108,7 @@ export const getHandlePosition = (
   if (side) {
     return kHandlePositionBySide[side];
   }
-  const positions = kSideOrders[kind];
-  return positions[index % positions.length];
+  return kHandlePositionBySide[getFallbackSide(kind, index)];
 };
 
 export const getHandleSide = (
@@ -99,7 +123,10 @@ export const getHandleSide = (
   return kHandleSideByPosition[getHandlePosition(kind, index)];
 };
 
-export const groupHandlesBySide = (ids: string[], kind: HandleKind) => {
+export const groupHandlesBySide = (
+  ids: string[],
+  kind: HandleKind = 'source',
+) => {
   return ids.reduce(
     (groups, id, index) => {
       groups[getHandleSide(kind, index, id)].push(id);

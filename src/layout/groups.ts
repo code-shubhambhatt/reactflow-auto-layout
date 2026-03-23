@@ -98,8 +98,7 @@ export const withGroupNodes = (workflow: Reactflow): Reactflow => {
         data: {
           ...group,
           childNodeIds: childNodes.map((node) => node.id),
-          sourceHandles: [],
-          targetHandles: [],
+          ports: [],
           isGroup: true,
         },
       },

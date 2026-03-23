@@ -49,23 +49,17 @@ export const layoutELK = async (
       subWorkflowRootNodes.push(node);
     }
     const { widthWithDefault, heightWithDefault } = getNodeSize(node);
-    const sourcePorts = node.data.sourceHandles.map((id, index) => ({
+    const ports = node.data.ports.map((id, index) => ({
       id,
       properties: {
         side: getElkPortSide(getHandlePosition('source', index, id)),
-      },
-    }));
-    const targetPorts = node.data.targetHandles.map((id, index) => ({
-      id,
-      properties: {
-        side: getElkPortSide(getHandlePosition('target', index, id)),
       },
     }));
     return {
       id: node.id,
       width: widthWithDefault,
       height: heightWithDefault,
-      ports: [...targetPorts, ...sourcePorts],
+      ports,
       properties: {
         'org.eclipse.elk.portConstraints': 'FIXED_ORDER',
       },

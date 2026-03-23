@@ -31,23 +31,16 @@ export interface Workflow {
 
 export type ReactflowNodeData = WorkflowNode & {
   /**
-   * The output ports of the current node.
+   * Shared side ports of the current node.
    *
-   * Format of Port ID: `nodeID#source#idx`
+   * Format of Port ID: `nodeID#port#side`
    */
-  sourceHandles: string[];
-  /**
-   * The input port of the current node (only one).
-   *
-   * Format of Port ID: `nodeID#target#idx`
-   */
-  targetHandles: string[];
+  ports: string[];
 };
 
 export type ReactflowGroupNodeData = WorkflowGroup & {
   childNodeIds: string[];
-  sourceHandles: string[];
-  targetHandles: string[];
+  ports: string[];
   isGroup: true;
 };
 

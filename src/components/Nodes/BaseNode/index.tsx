@@ -8,11 +8,9 @@ import {
 } from '@xyflow/react';
 import { type ComponentType, type CSSProperties, memo, useEffect } from 'react';
 
-import { kReactflowLayoutConfig } from '@/components/ControlPanel';
 import type { ReactflowBaseNode } from '@/data/types';
 import {
   groupHandlesBySide,
-  type HandleKind,
   type HandleSide,
   kHandlePositionBySide,
 } from '@/layout/ports';
@@ -33,7 +31,6 @@ const getHandleFlexDirection = (
 };
 
 const renderHandles = (
-  kind: HandleKind,
   handlesBySide: Record<HandleSide, string[]>,
   reverseOrder = false,
 ) => {
@@ -44,17 +41,19 @@ const renderHandles = (
     }
     return (
       <div
-        className={`handles-side handles-side-${side} ${kind}s`}
-        key={`${kind}-${side}`}
+        className={`handles-side handles-side-${side} ports`}
+        key={`port-${side}`}
         style={{ flexDirection: getHandleFlexDirection(side, reverseOrder) }}
       >
         {ids.map((id) => (
           <Handle
             className={`handle handle-${side}`}
             id={id}
+            isConnectableEnd
+            isConnectableStart
             key={id}
             position={kHandlePositionBySide[side]}
-            type={kind}
+            type="source"
           />
         ))}
       </div>
@@ -64,16 +63,8 @@ const renderHandles = (
 
 export const BaseNode: ComponentType<NodeProps<ReactflowBaseNode>> = memo(
   ({ id, data }) => {
-    const { reverseSourceHandles } = kReactflowLayoutConfig.state;
     const updateNodeInternals = useUpdateNodeInternals();
-    const targetHandlesBySide = groupHandlesBySide(
-      data.targetHandles,
-      'target',
-    );
-    const sourceHandlesBySide = groupHandlesBySide(
-      data.sourceHandles,
-      'source',
-    );
+    const portsBySide = groupHandlesBySide(data.ports);
 
     useEffect(() => {
       const frameId = requestAnimationFrame(() => {
@@ -82,13 +73,12 @@ export const BaseNode: ComponentType<NodeProps<ReactflowBaseNode>> = memo(
       return () => {
         cancelAnimationFrame(frameId);
       };
-    }, [id, data.sourceHandles, data.targetHandles, updateNodeInternals]);
+    }, [id, data.ports, updateNodeInternals]);
 
     return (
       <>
-        {renderHandles('target', targetHandlesBySide)}
+        {renderHandles(portsBySide)}
         <div className="label">{String(data.label ?? data.id)}</div>
-        {renderHandles('source', sourceHandlesBySide, reverseSourceHandles)}
       </>
     );
   },
