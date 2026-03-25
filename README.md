@@ -8,6 +8,8 @@ This project is a React Flow based diagram editor with:
 - fixed side ports
 - background group containers derived from workflow metadata
 
+For a focused explanation of the custom enhancements in this fork and how to integrate them into another application, see [ENHANCEMENTS_GUIDE.md](./ENHANCEMENTS_GUIDE.md).
+
 ## Run Locally
 
 ### Prerequisites
