@@ -29,6 +29,14 @@ export interface Workflow {
   groups?: WorkflowGroup[];
 }
 
+export interface ReactflowComputedGroupLayout extends WorkflowGroup {
+  childNodeIds: string[];
+  depth: number;
+  position: XYPosition;
+  width: number;
+  height: number;
+}
+
 export type ReactflowNodeData = WorkflowNode & {
   /**
    * Shared side ports of the current node.
@@ -111,4 +119,6 @@ export interface Reactflow {
   nodes: ReactflowNodeWithData[];
   edges: ReactflowEdgeWithData[];
   groups?: WorkflowGroup[];
+  layoutDirection?: 'vertical' | 'horizontal';
+  computedGroupLayouts?: ReactflowComputedGroupLayout[];
 }

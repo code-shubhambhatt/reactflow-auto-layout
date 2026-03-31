@@ -1,7 +1,11 @@
 import { getIncomers, Position } from '@xyflow/react';
 import ELK from 'elkjs/lib/elk.bundled.js';
 
-import type { ReactflowNodeWithData } from '@/data/types';
+import type {
+  ReactflowComputedGroupLayout,
+  ReactflowNodeWithData,
+} from '@/data/types';
+import { getDescendantNodeIds, normalizeWorkflowGroups } from '@/layout/groups';
 import { getHandlePosition } from '@/layout/ports';
 
 import { getEdgeLayouted, getNodeLayouted, getNodeSize } from '../../metadata';
@@ -29,12 +33,19 @@ const getElkPortSide = (position: Position) => {
 
 export type ELKLayoutAlgorithms = 'elk-layered' | 'elk-mr-tree';
 
+const kElkGroupIdPrefix = '__group__::';
+
+const getElkGroupId = (groupId: string) => {
+  return `${kElkGroupIdPrefix}${groupId}`;
+};
+
 export const layoutELK = async (
   props: LayoutAlgorithmProps & { algorithm?: ELKLayoutAlgorithms },
 ) => {
   const {
     nodes,
     edges,
+    groups,
     direction,
     visibility,
     spacing,
@@ -42,7 +53,8 @@ export const layoutELK = async (
   } = props;
 
   const subWorkflowRootNodes: ReactflowNodeWithData[] = [];
-  const layoutNodes = nodes.map((node) => {
+  const serviceNodesById = new Map(nodes.map((node) => [node.id, node]));
+  const createElkNode = (node: ReactflowNodeWithData) => {
     const incomers = getIncomers(node, nodes, edges);
     if (incomers.length < 1) {
       // Node without input is the root node of sub-workflow
@@ -64,7 +76,61 @@ export const layoutELK = async (
         'org.eclipse.elk.portConstraints': 'FIXED_ORDER',
       },
     };
-  });
+  };
+
+  const normalizedGroups = normalizeWorkflowGroups(
+    {
+      nodes,
+      edges,
+      groups,
+    },
+    nodes,
+  );
+
+  const createElkGroupNode = (groupId: string): any => {
+    const group = normalizedGroups.get(groupId)!;
+    return {
+      id: getElkGroupId(group.id),
+      children: [
+        ...group.childGroupIds.map((childGroupId) =>
+          createElkGroupNode(childGroupId),
+        ),
+        ...group.directNodeIds
+          .map((nodeId) => serviceNodesById.get(nodeId))
+          .filter((node): node is ReactflowNodeWithData => !!node)
+          .map((node) => createElkNode(node)),
+      ],
+      layoutOptions: {
+        'elk.padding': `[top=44,left=24,bottom=24,right=24]`,
+        'elk.spacing.nodeNode':
+          direction === 'horizontal'
+            ? spacing.y.toString()
+            : spacing.x.toString(),
+        'elk.layered.spacing.nodeNodeBetweenLayers':
+          direction === 'horizontal'
+            ? spacing.x.toString()
+            : spacing.y.toString(),
+      },
+    };
+  };
+
+  const topLevelGroupIds = [...normalizedGroups.values()]
+    .filter((group) => !group.parentId)
+    .sort((left, right) => left.order - right.order)
+    .map((group) => group.id);
+  const groupedNodeIds = new Set<string>();
+  for (const group of normalizedGroups.values()) {
+    for (const nodeId of group.directNodeIds) {
+      groupedNodeIds.add(nodeId);
+    }
+  }
+
+  const layoutNodes = [
+    ...topLevelGroupIds.map((groupId) => createElkGroupNode(groupId)),
+    ...nodes
+      .filter((node) => !groupedNodeIds.has(node.id))
+      .map((node) => createElkNode(node)),
+  ];
 
   const layoutEdges = edges.map((edge) => {
     return {
@@ -103,26 +169,53 @@ export const layoutELK = async (
           direction === 'horizontal'
             ? spacing.x.toString()
             : spacing.y.toString(),
+        'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
       },
     })
     .catch((e) => {
-      console.log('❌ ELK layout failed', e);
+      console.log('âŒ ELK layout failed', e);
     });
 
   if (!layouted?.children) {
     return;
   }
 
-  const layoutedNodePositions = layouted.children.reduce(
-    (pre, v) => {
-      pre[v.id] = {
-        x: v.x ?? 0,
-        y: v.y ?? 0,
-      };
-      return pre;
-    },
-    {} as Record<string, { x: number; y: number }>,
-  );
+  const layoutedNodePositions: Record<string, { x: number; y: number }> = {};
+  const computedGroupLayouts: ReactflowComputedGroupLayout[] = [];
+
+  const visitLayout = (currentNode: any, parentPosition = { x: 0, y: 0 }) => {
+    const absolutePosition = {
+      x: parentPosition.x + (currentNode.x ?? 0),
+      y: parentPosition.y + (currentNode.y ?? 0),
+    };
+
+    if (currentNode.id?.startsWith(kElkGroupIdPrefix)) {
+      const groupId = currentNode.id.slice(kElkGroupIdPrefix.length);
+      const group = normalizedGroups.get(groupId);
+      if (group) {
+        computedGroupLayouts.push({
+          id: group.id,
+          label: group.label,
+          typeId: group.typeId,
+          childNodeIds: getDescendantNodeIds(group.id, normalizedGroups),
+          depth: group.depth,
+          position: absolutePosition,
+          width: currentNode.width ?? 0,
+          height: currentNode.height ?? 0,
+        });
+      }
+    } else if (serviceNodesById.has(currentNode.id)) {
+      layoutedNodePositions[currentNode.id] = absolutePosition;
+    }
+
+    for (const child of currentNode.children ?? []) {
+      visitLayout(child, absolutePosition);
+    }
+  };
+
+  for (const child of layouted.children) {
+    visitLayout(child);
+  }
 
   return {
     nodes: nodes.map((node) => {
@@ -130,6 +223,8 @@ export const layoutELK = async (
       return getNodeLayouted({ node, position, direction, visibility });
     }),
     edges: edges.map((edge) => getEdgeLayouted({ edge, visibility })),
+    groups,
+    computedGroupLayouts,
   };
 };
 
