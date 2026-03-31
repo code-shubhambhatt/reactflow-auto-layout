@@ -82,5 +82,8 @@ export const layoutReactflow = async (
       algorithm: 'origin',
     });
   }
-  return withGroupNodes(result!);
+  return withGroupNodes({
+    ...result!,
+    layoutDirection: config.direction,
+  });
 };
